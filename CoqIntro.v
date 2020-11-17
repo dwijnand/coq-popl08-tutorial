@@ -163,8 +163,8 @@ Inductive tm : Set :=
     desired.)
 *)
 
-Inductive bvalue : tm -> Prop := 
-| b_true : bvalue tm_true 
+Inductive bvalue : tm -> Prop :=
+| b_true : bvalue tm_true
 | b_false : bvalue tm_false.
 
 Inductive nvalue : tm -> Prop :=
@@ -245,6 +245,17 @@ Inductive eval_many : tm -> tm -> Prop :=
     to all the exercises near the bottom of the file.  
 *)  
 
+Inductive eval_rtc : tm -> tm -> Prop :=
+| r_eval : forall t t',
+    eval t t' ->
+    eval_rtc t t'
+| r_refl : forall t,
+    eval_rtc t t
+| r_trans : forall t u v,
+    eval_rtc t u ->
+    eval_rtc u v ->
+    eval_rtc t v.
+
 (** A term is a [normal_form] if there is no term to which it
     can step.  Note the concrete syntax for negation and
     existential quantification in the definition below.
@@ -264,8 +275,8 @@ Definition normal_form (t : tm) : Prop :=
     premise [nvalue v] to the appropriate cases.
 
     Hint: You should end up with a total of 8 cases.
+*)
 
-<<
 Inductive full_eval : tm -> tm -> Prop :=
 | f_value : forall v,
     value v ->
@@ -274,11 +285,50 @@ Inductive full_eval : tm -> tm -> Prop :=
     full_eval t1 tm_true ->
     full_eval t2 v ->
     full_eval (tm_if t1 t2 t3) v
+| f_iffalse : forall t1 t2 t3 v,
+    full_eval t1 tm_false ->
+    full_eval t3 v ->
+    full_eval (tm_if t1 t2 t3) v
+(*
+| f_if : forall t1 t1' t2 t3,
+    full_eval t1 t1' ->
+    full_eval (tm_if t1 t2 t3) (tm_if t1' t2 t3)
+*)
 | f_succ : forall t v,
     nvalue v ->
     full_eval t v ->
-    full_eval (tm_succ t) (tm_succ v).
->>
+    full_eval (tm_succ t) (tm_succ v)
+| f_predzero : forall t,
+    full_eval t tm_zero ->
+    full_eval (tm_pred t) tm_zero
+| f_predsucc : forall t v,
+    nvalue t ->
+    full_eval (tm_succ t) v ->
+    full_eval (tm_pred v) t
+(*
+| f_predsucc : forall t v,
+    nvalue v ->
+    full_eval t (tm_succ v) ->
+    full_eval (tm_pred t) v
+*)
+(*
+| f_pred : forall t t',
+    nvalue t' ->
+    full_eval t t' ->
+    full_eval (tm_pred t) (tm_pred t')
+*)
+| f_iszerozero : forall t,
+    full_eval t tm_zero ->
+    full_eval (tm_iszero t) tm_true
+| f_iszerosucc : forall t v,
+    nvalue t ->
+    full_eval (tm_succ t) v ->
+    full_eval (tm_iszero v) tm_false.
+(*
+| f_iszero : forall t t',
+    nvalue t ->
+    full_eval t t' ->
+    full_eval (tm_iszero t) (tm_iszero t').
 *)
 
 (** *** Tip
@@ -565,9 +615,8 @@ Proof.
       We will choose [t'] to be [t2].  Now we can show
       [eval t1 t2] by our assumption, and we can show
       [eval_many t2 t2] by [m_refl]. *)
-
-  (* to finish *)
-Admitted.
+  intros t1 t2 H. apply m_step with (t' := t2). apply H. apply m_refl.
+Qed.
 
 (** *** Exercise *)
 Lemma m_two : forall t1 t2 t3,
@@ -583,9 +632,12 @@ Proof.
       the other case, by the lemma [m_one], to show [eval_many
       t2 t3], it suffices to show [eval t2 t3], which is one of
       our assumptions.  *)
-
-  (* to finish *)
-Admitted.
+  intros t1 t2 t3 He1 He2.
+  apply m_step with (t' := t2).
+  apply He1.
+  apply m_one.
+  apply He2.
+Qed.
 
 (** *** Exercise *)
 Lemma m_iftrue_step : forall t t1 t2 u,
@@ -607,9 +659,16 @@ Proof.
       [eval (tm_if tm_true t1 t2) t1] and [eval_many t1 u].  The
       former holds by [e_iftrue] and the latter holds by
       assumption. *)
-
-  (* to finish *)
-Admitted.
+  intros t t1 t2 u.
+  intros He.
+  intros Hm.
+  apply m_step with (t' := (tm_if tm_true t1 t2)).
+  apply e_if.
+  apply He.
+  apply m_step with (t' := t1).
+  apply e_iftrue.
+  apply Hm.
+Qed.
 
 (**************************************************************)
 (** ** Working with Definitions
@@ -636,8 +695,8 @@ Lemma unfold_example : forall t t',
   strongly_diverges t'.
 Proof.
   intros t t' Hd He.
-   unfold strongly_diverges. intros u Hm.
-   unfold strongly_diverges in Hd.
+   (*unfold strongly_diverges.*) intros u Hm.
+(* unfold strongly_diverges in Hd. *)
    apply Hd. apply m_step with (t' := t').
     apply He.
     apply Hm.
@@ -722,8 +781,17 @@ Lemma m_if_iszero_conj : forall v t2 t2' t3 t3',
   eval_many (tm_if (tm_iszero tm_zero) t2 t3) t2' /\
   eval_many (tm_if (tm_iszero (tm_succ v)) t2 t3) t3'.
 Proof.
-  (* to finish *)
-Admitted.
+  intros v t2 t2' t3 t3' H.
+  destruct H as [ Hn [ He1 He2 ] ]. split.
+    apply m_three with (t' := tm_if tm_true t2 t3) (t'' := t2).
+      apply e_if. apply e_iszerozero.
+      apply e_iftrue.
+      apply He1.
+    apply m_three with (t' := tm_if tm_false t2 t3) (t'' := t3).
+      apply e_if. apply e_iszerosucc. apply Hn.
+      apply e_iffalse.
+      apply He2.
+Qed.
 
 (** *** Example
     If the goal is a disjunction, we can use the [left] or
@@ -775,9 +843,15 @@ Proof.
       conclusion is proved.  Next, consider the case in which
       [nvalue t] holds.  Now consider the subcase where
       [bvalue u] holds. ... *)
-
-  (* to finish *)
-Admitted.
+  intros t u H.
+  destruct H as [ [ Htb | Htn ] Hu ].
+    left. apply Htb.
+    destruct Hu as [ Hub | Hun ].
+      right. left. apply Hub.
+      right. right. split.
+        apply Htn.
+        apply Hun.
+Qed.
 
 (** *** Example
     [destruct] can be used on propositions with implications.
@@ -792,7 +866,7 @@ Lemma destruct_example : forall bv t t' t'',
 Proof.
   intros bv t t' t'' Hbv H. destruct H as [ H1 H2 ].
     Show 2.
-    unfold value. left. apply Hbv.
+    left. apply Hbv.
     apply m_two with (t2 := t').
       apply H1.
       apply H2.
@@ -881,9 +955,12 @@ Proof.
         induction hypothesis, which allows us to piece together
         [eval_many t' u0] and [eval_many u0 u] to get
         [eval_many t' u]. *)
-
-  (* to finish *)
-Admitted.
+  intros t t' u Hm1 Hm2. induction Hm1.
+    apply Hm2.
+    apply m_step with (t' := t').
+      apply H.
+      apply IHHm1. apply Hm2.
+Qed.
 
 (** *** Exercise
     It is possible to use [destruct] not just on hypotheses but
@@ -937,30 +1014,51 @@ Qed.
     is also at the bottom.  (Coq will give an error if we leave
     it uncommented since it mentions the [eval_rtc] relation,
     which was the solution to another exercise.)
-<<
+*)
+
 Lemma eval_rtc_many : forall t u,
   eval_rtc t u ->
   eval_many t u.
->>
-*) 
+Proof.
+  intros t u Hr. induction Hr.
+    apply m_one. apply H.
+    apply m_refl.
+    apply m_trans with (t' := u).
+      apply IHHr1.
+      apply IHHr2.
+Qed.
 
 (** *** Exercise
     Prove the following lemma.
-<<
+*)
 Lemma eval_many_rtc : forall t u,
   eval_many t u ->
   eval_rtc t u.
->>
-*)
+Proof.
+  intros t u Hm. induction Hm.
+    apply r_refl.
+    apply r_trans with (u := t').
+      apply r_eval. apply H.
+      apply IHHm.
+Qed.
 
 (** *** Exercise
     Prove the following lemma.
-<<
+*)
 Lemma full_eval_to_value : forall t v,
   full_eval t v ->
   value v.
->>
-*)
+Proof.
+  intros t v Hf. induction Hf.
+    apply H.
+    apply IHHf2.
+    apply IHHf2.
+    right. apply n_succ. apply H.
+    right. apply n_zero.
+    right. apply H.
+    left. apply b_true.
+    left. apply b_false.
+Qed.
 
 (**************************************************************)
 (** ** Working with Existential Quantification
@@ -1034,8 +1132,8 @@ Lemma value_can_expand : forall v,
   value v ->
   exists u, eval u v.
 Proof.
-  (* to finish *)
-Admitted.
+  intros v H. exists (tm_if tm_true v v). apply e_iftrue.
+Qed.
 
 (*
   LAB 4: (10 minutes)
@@ -1061,10 +1159,16 @@ Proof.
       other hand, in the case where [nv] is built from
       [tm_succ], we choose [bv] to be [tm_false] and the proof
       follows similarly. *)
-
-  (* to finish *)
-Admitted.
-
+  intros t [ nv [ Hnv Hm ] ]. destruct Hnv.
+    exists tm_true.
+      apply m_trans with (t' := tm_iszero tm_zero).
+        apply m_iszero. apply Hm.
+        apply m_one. apply e_iszerozero.
+    exists tm_false.
+      apply m_trans with (t' := tm_iszero (tm_succ t0)).
+        apply m_iszero. apply Hm.
+        apply m_one. apply e_iszerosucc. apply Hnv.
+Qed.
 
 (**************************************************************)
 (** ** Working with Negation
@@ -1105,16 +1209,19 @@ Lemma normal_form_to_forall : forall t,
   normal_form t ->
   forall u, ~ eval t u.
 Proof.
-  (* to finish *)
-Admitted.
+  unfold normal_form, not. intros t H u He.
+  apply H. exists u. apply He.
+Qed.
 
 (** *** Exercise *)
 Lemma normal_form_from_forall : forall t,
   (forall u, ~ eval t u) ->
   normal_form t.
 Proof.
-  (* to finish *)
-Admitted.
+  unfold normal_form, not. intros t H [ t' He ].
+  apply H with (u := t').
+  apply He.
+Qed.
 
 (** *** Example
     If you happen to have [False] as a hypothesis, you may use
@@ -1160,8 +1267,12 @@ Lemma negation_exercise : forall v1 v2,
   ~ (~ bvalue v1 /\ ~ bvalue v2) ->
   eval tm_true tm_false.
 Proof.
-  (* to finish *)
-Admitted.
+  intros v1 v2 Hvs Hbs.
+  destruct Hbs.
+  split.
+    intros Hb. destruct Hvs. left. left. apply Hb.
+    intros Hb. destruct Hvs. right. left. apply Hb.
+Qed.
 
 (**************************************************************)
 (** ** Working with Equality
@@ -1256,8 +1367,10 @@ Lemma equality_exercise : forall t1 t2 t3 u1 u2 u3 u4,
   tm_if t1 t2 t3 = tm_if u3 u3 u4 ->
   t1 = u4.
 Proof.
-  (* to finish *)
-Admitted.
+  intros t1 t2 t3 u1 u2 u3 u4 Heq1 Heq2.
+  inversion Heq1. subst t1. subst t2. subst t3.
+  inversion Heq2. reflexivity.
+Qed.
 
 (** *** Example
     [inversion] will also solve a goal when unification fails on
@@ -1297,8 +1410,15 @@ Qed.
 Lemma succ_not_circular : forall t,
   t <> tm_succ t.
 Proof.
-  (* to finish *)
-Admitted.
+  unfold not. intros t. induction t.
+    intros e. inversion e.
+    intros e. inversion e.
+    intros e. inversion e.
+    intros e. inversion e.
+    intros e. inversion e. destruct IHt. apply H0.
+    intros e. inversion e.
+    intros e. inversion e.
+Qed.
 
 (**************************************************************)
 (** ** Reasoning by Inversion
@@ -1363,9 +1483,11 @@ Proof.
         contradicts our assumption that [t] is a normal form
         (which can be shown by using [destruct] on that
         assumption). *)
-
-  (* to finish *)
-Admitted.
+  intros t Hnf Hm. inversion Hm. subst. inversion H.
+    apply n_zero.
+    apply n_succ. apply H2.
+    destruct Hnf. exists t'0. apply H2.
+Qed.
 
 (** *** Exercise
     Tip: Nested patterns will be useful here.
@@ -1377,8 +1499,10 @@ Lemma contradictory_equalities_exercise :
     u = tm_pred v) ->
   eval tm_true tm_false.
 Proof.
-  (* to finish *)
-Admitted.
+  intros [ t [ u [ v [ [ b | n ] [ eq1 eq2 ] ] ] ] ].
+    destruct b. inversion eq1. inversion eq1.
+    destruct n. inversion eq1. inversion eq1. subst t. subst u. inversion n.
+Qed.
 
 (** *** Exercise *)
 Lemma eval_fact_exercise : forall t1 t2,
@@ -1386,17 +1510,36 @@ Lemma eval_fact_exercise : forall t1 t2,
   eval t2 tm_false ->
   exists u, t1 = tm_succ u.
 Proof.
-  (* to finish *)
-Admitted.
+  intros t1 t2 He1 He2.
+  inversion He1. subst t2.
+  inversion He2. subst t'.
+  inversion H0. exists (tm_succ t0). reflexivity.
+Qed.
 
 (** *** Exercise *)
 Lemma normal_form_if : forall t1 t2 t3,
   normal_form (tm_if t1 t2 t3) ->
   t1 <> tm_true /\ t1 <> tm_false /\ normal_form t1.
 Proof.
-  (* to finish *)
-Admitted.
-
+  intros t1 t2 t3 Hnf. destruct t1.
+    destruct Hnf. exists t2. apply e_iftrue.
+    destruct Hnf. exists t3. apply e_iffalse.
+    split. intros Heq. inversion Heq.
+    split. intros Heq. inversion Heq.
+    intros [t' He]. destruct Hnf. exists (tm_if t' t2 t3). apply e_if. apply He.
+    split. intros Heq. inversion Heq.
+    split. intros Heq. inversion Heq.
+    intros [t' He]. destruct Hnf. exists (tm_if t' t2 t3). apply e_if. apply He.
+    split. intros Heq. inversion Heq.
+    split. intros Heq. inversion Heq.
+    intros [t' He]. destruct Hnf. exists (tm_if t' t2 t3). apply e_if. apply He.
+    split. intros Heq. inversion Heq.
+    split. intros Heq. inversion Heq.
+    intros [t' He]. destruct Hnf. exists (tm_if t' t2 t3). apply e_if. apply He.
+    split. intros Heq. inversion Heq.
+    split. intros Heq. inversion Heq.
+    intros [t' He]. destruct Hnf. exists (tm_if t' t2 t3). apply e_if. apply He.
+Qed.
 
 (**************************************************************)
 (** ** Additional Important Tactics
@@ -1428,9 +1571,7 @@ Lemma value_is_normal_form : forall v,
   normal_form v.
 Proof.
   intros v [ Hb | Hn ] [ t He ].
-    destruct Hb.
-      inversion He.
-      inversion He.
+    destruct Hb; inversion He.
     generalize dependent t. induction Hn.
       intros t He. inversion He.
       intros u He. inversion He. subst. destruct (IHHn t').
@@ -1685,22 +1826,24 @@ Qed.
 Lemma pred_not_circular : forall t,
   t <> tm_pred t.
 Proof.
-  (* to finish *)
-Admitted.
+  intros t H. induction t; inversion H; auto.
+Qed.
 
 Lemma m_succ : forall t u,
   eval_many t u ->
   eval_many (tm_succ t) (tm_succ u).
 Proof.
-  (* to finish *)
-Admitted.
+  intros t u Hm.
+   induction Hm; eauto using m_refl, m_step, e_succ.
+Qed.
 
 Lemma m_pred : forall t u,
   eval_many t u ->
   eval_many (tm_pred t) (tm_pred u).
 Proof.
-  (* to finish *)
-Admitted.
+  intros t u Hm.
+   induction Hm; eauto using m_refl, m_step, e_pred.
+Qed.
 
 (** *** Exercise
     Go back and rewrite your proofs for [m_trans] and
@@ -1812,8 +1955,6 @@ Definition bool_to_tm (b : bool) : tm :=
     second to the [else] branch).  Thus, we can define a
     function [is_bool] as below.
 *)
-Definition is_bool (t : tm) : bool :=
-  if tm_to_bool t then true else false.
 
 (** *** Example
     To define a recursive function, use [Fixpoint] instead of
@@ -1841,6 +1982,9 @@ Fixpoint nat_to_tm (n : nat) {struct n} : tm :=
   | S m => tm_succ (nat_to_tm m)
   end.
 
+Definition is_bool (t : tm) : bool := if tm_to_bool t then true else false.
+Definition is_nat  (t : tm) : bool := if tm_to_nat  t then true else false.
+
 (** *** Exercise
     Write a function [interp : tm -> tm] that returns the
     normal form of its argument according to the small-step
@@ -1850,6 +1994,28 @@ Fixpoint nat_to_tm (n : nat) {struct n} : tm :=
     function) to prevent stuck terms from stepping in the cases
     [e_predsucc] and [e_iszerosucc].
 *)
+
+Fixpoint interp (t : tm) {struct t} : tm :=
+  match t with
+  | tm_true     => t
+  | tm_false    => t
+  | tm_if b p q => match interp b with tm_true => interp p | tm_false => interp q | b2 => tm_if b2 p q end
+  | tm_zero     => t
+  | tm_succ x   => match interp x with
+                   | tm_pred y => if is_nat y then y else tm_succ (tm_pred y)
+                   | t2        => tm_succ t2
+                   end
+  | tm_pred x   => match interp x with
+                   | tm_zero   => tm_zero
+                   | tm_succ y => if is_nat y then y else tm_pred (tm_succ y)
+                   | t2        => tm_pred t2
+                   end
+  | tm_iszero x => match interp x with
+                   | tm_zero   => tm_true
+                   | tm_succ y => if is_nat y then tm_false else tm_iszero (tm_succ y)
+                   | t2        => tm_iszero t2
+                   end
+  end.
 
 (** *** Example
     The tactic [simpl] (recursively) reduces the application of
@@ -1872,7 +2038,7 @@ Qed.
 (** *** Example
     We can also apply the tactic [simpl] in our hypotheses.
 *)
-Lemma tm_bool_tm :forall t b,
+Lemma tm_bool_tm : forall t b,
   tm_to_bool t = some_bool b ->
   bool_to_tm b = t.
 Proof.
@@ -1895,15 +2061,24 @@ Qed.
 Lemma tm_to_bool_dom_includes_bvalue : forall bv,
   bvalue bv -> exists b, tm_to_bool bv = some_bool b.
 Proof.
-  (* to finish *)
-Admitted.
+  intros bv H. destruct H.
+    exists true.  reflexivity.
+    exists false. reflexivity.
+Qed.
 
 (** *** Exercise *)
 Lemma tm_to_bool_dom_only_bvalue : forall bv b,
   tm_to_bool bv = some_bool b -> bvalue bv.
 Proof.
-  (* to finish *)
-Admitted.
+  intros bv b Heq. destruct bv.
+    apply b_true.
+    apply b_false.
+    inversion Heq.
+    inversion Heq.
+    inversion Heq.
+    inversion Heq.
+    inversion Heq.
+Qed.
 
 (** *** Example
     Not all uses of [simpl] are optional.  Sometimes they are
@@ -1949,15 +2124,27 @@ Qed.
 Lemma tm_to_nat_dom_includes_nvalue : forall v,
   nvalue v -> exists n, tm_to_nat v = some_nat n.
 Proof.
-  (* to finish *)
-Admitted.
+  intros v Hnv. induction Hnv.
+    exists 0. simpl. reflexivity.
+    destruct IHHnv as [ n Heq ]. exists (S n). simpl. rewrite -> Heq. reflexivity.
+Qed.
 
 (** *** Exercise *)
 Lemma tm_to_nat_dom_only_nvalue : forall v n,
   tm_to_nat v = some_nat n -> nvalue v.
 Proof.
-  (* to finish *)
-Admitted.
+  intros v. induction v; intros n Heq.
+    inversion Heq.
+    inversion Heq.
+    inversion Heq.
+    apply n_zero.
+    apply n_succ.
+     simpl in Heq. destruct (tm_to_nat v).
+      inversion Heq. eapply IHv. reflexivity.
+      inversion Heq.
+    inversion Heq.
+    inversion Heq.
+Qed.
 
 (** *** Example
     Using the tactic [destruct] (or [induction]) on a complex
@@ -1986,14 +2173,68 @@ Qed.
     Prove the following lemmas involving the function [interp]
     from a previous exercise:
 <<
-Lemma interp_reduces : forall t,
-  eval_many t (interp t).
 
 Lemma interp_fully_reduces : forall t,
   normal_form (interp t).
 >>
 *)
-
+Lemma interp_reduces : forall t,
+  eval_many t (interp t).
+Proof.
+  intros t. induction t.
+    apply m_refl.
+    apply m_refl.
+    simpl. destruct (interp t1).
+      eapply m_trans.
+        apply m_if. apply IHt1.
+        eapply m_trans.
+          eapply m_one. apply e_iftrue.
+          apply IHt2.
+      eapply m_trans.
+        apply m_if. apply IHt1.
+        eapply m_trans.
+          eapply m_one. apply e_iffalse.
+          apply IHt3.
+      apply m_if. apply IHt1.
+      apply m_if. apply IHt1.
+      apply m_if. apply IHt1.
+      apply m_if. apply IHt1.
+      apply m_if. apply IHt1.
+    apply m_refl.
+    simpl. apply m_succ. apply IHt.
+    simpl. destruct (interp t).
+      apply m_pred. apply IHt.
+      apply m_pred. apply IHt.
+      apply m_pred. apply IHt.
+      eapply m_trans.
+        apply m_pred. apply IHt.
+        apply m_one. apply e_predzero.
+      remember (tm_to_nat t0) as x. destruct x.
+        eapply m_trans.
+          apply m_pred. apply IHt.
+          apply m_one. apply e_predsucc.
+           eapply tm_to_nat_dom_only_nvalue.
+           rewrite <- Heqx. reflexivity.
+        apply m_pred. apply IHt.
+      apply m_pred. apply IHt.
+      apply m_pred. apply IHt.
+    simpl. destruct (interp t).
+      apply m_iszero. apply IHt.
+      apply m_iszero. apply IHt.
+      apply m_iszero. apply IHt.
+      eapply m_trans.
+        apply m_iszero. apply IHt.
+        apply m_one. apply e_iszerozero.
+      remember (tm_to_nat t0) as x. destruct x.
+        eapply m_trans.
+          apply m_iszero. apply IHt.
+          apply m_one. apply e_iszerosucc.
+            eapply tm_to_nat_dom_only_nvalue.
+            rewrite <- Heqx. reflexivity.
+        apply m_iszero. apply IHt.
+      apply m_iszero. apply IHt.
+      apply m_iszero. apply IHt.
+Qed.
 
 (**************************************************************)
 (** * Solutions to Exercises *)
