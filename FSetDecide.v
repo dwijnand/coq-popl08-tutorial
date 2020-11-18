@@ -705,7 +705,7 @@ the above form:
     Lemma dec_eq : forall (x y : E.t),
       decidable (E.eq x y).
     Proof.
-      intros x y. red. destruct (E.compare x y); auto.
+      intros x y. red.
       destruct (E.eq_dec x y).
       auto.
       auto.

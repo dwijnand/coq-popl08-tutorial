@@ -48,14 +48,9 @@ Module Make (X : UsualOrderedType) <: S with Module E := X.
       unfold F.MSet.Raw.t in *.
       eapply Sort_InA_eq_ext; eauto.
       intros; eapply E.lt_trans; eauto.
-      1 : {
-        apply F.MSet.Raw.isok_iff.
-        auto.
-      }
-      1 : {
-        apply F.MSet.Raw.isok_iff.
-        auto.
-      }
+      apply E.lt_not_eq.
+      apply F.MSet.Raw.isok_iff. auto.
+      apply F.MSet.Raw.isok_iff. auto.
     subst s1.
     assert (pf1 = pf2).
     apply proof_irrelevance.

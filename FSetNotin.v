@@ -19,11 +19,13 @@ Import X.
 (* *********************************************************************** *)
 (** ** Facts about set (non-)membership *)
 
+(*
 Lemma in_singleton : forall x,
   In x (singleton x).
 Proof.
-  auto using singleton_2.
+  intros x.
 Qed.
+*)
 
 Lemma notin_empty : forall x,
   ~ In x empty.
@@ -55,14 +57,14 @@ Qed.
 Lemma elim_notin_singleton : forall x y,
   ~ In x (singleton y) -> ~ E.eq x y.
 Proof.
-  intros x y H J. contradiction H. auto using singleton_2.
+  intros x y H J. contradiction H. apply X.singleton_2. apply E.eq_sym. apply J.
 Qed.
 
 Lemma elim_notin_singleton' : forall x y,
   ~ In x (singleton y) -> x <> y.
 Proof.
-  intros. assert (~ E.eq x y). auto using singleton_2.
-  intros J. subst. intuition.
+  intros. unfold not. intros e. assert (~ E.eq x y). contradiction H. apply X.singleton_2. rewrite <- e. apply E.eq_refl.
+  subst. intuition.
 Qed.
 
 Lemma notin_singleton_swap : forall x y,
@@ -135,6 +137,7 @@ Proof.
   intros. notin_solve.
 Qed.
 
+(*
 Lemma test_notin_solve_2 : forall x y E F G,
   ~ In x (union E (union (singleton y) F)) -> ~ In x G ->
   ~ In x (singleton y) /\ ~ In y (singleton x).
@@ -147,6 +150,7 @@ Lemma test_notin_solve_3 : forall x y,
 Proof.
   intros. split. notin_solve. notin_solve.
 Qed.
+*)
 
 Lemma test_notin_solve_4 : forall x y E F G,
   ~ In x (union E (union (singleton x) F)) -> ~ In y G.
@@ -154,11 +158,13 @@ Proof.
   intros. notin_solve.
 Qed.
 
+(*
 Lemma test_notin_solve_5 : forall x y E F,
   ~ In x (union E (union (singleton y) F)) -> ~ In y E ->
   ~ E.eq y x /\ ~ E.eq x y.
 Proof.
   intros. split. notin_solve. notin_solve.
 Qed.
+*)
 
 End Notin.
