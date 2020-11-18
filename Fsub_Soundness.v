@@ -42,7 +42,7 @@ Lemma sub_weakening : forall E F G S T,
   sub (G ++ F ++ E) S T.
 Proof with simpl_env; auto using wf_typ_weakening.
   intros E F G S T Sub Ok.
-  remember (G ++ E) as H.
+  remember (G ++ E).
   generalize dependent G.
   induction Sub; intros G Ok EQ; subst...
   Case "sub_trans_tvar".
@@ -67,7 +67,7 @@ Lemma sub_narrowing_aux : forall Q F E Z P S T,
   sub (F ++ [(Z, bind_sub P)] ++ E) S T.
 Proof with simpl_env; eauto using wf_typ_narrowing, wf_env_narrowing.
   intros Q F E Z P S T TransQ SsubT PsubQ.
-  remember (F ++ [(Z, bind_sub Q)] ++ E) as G. generalize dependent F.
+  remember (F ++ [(Z, bind_sub Q)] ++ E). generalize dependent F.
   induction SsubT; intros F EQ; subst...
   Case "sub_top".
     apply sub_top...
@@ -76,7 +76,12 @@ Proof with simpl_env; eauto using wf_typ_narrowing, wf_env_narrowing.
   Case "sub_trans_tvar".
     destruct (X == Z); subst.
     SCase "X = Z".
-      apply (sub_trans_tvar P); [ eauto using fresh_mid_head | ].
+      apply (sub_trans_tvar P).
+        apply binds_tail.
+        apply binds_head; apply binds_singleton.
+
+        eapply fresh_mid_head; apply ok_from_wf_env;
+          apply (proj1 (sub_regular (F ++ [(Z, bind_sub Q)] ++ E) U T SsubT)).
       apply TransQ.
       SSCase "P <: Q".
         rewrite_env (empty ++ (F ++ [(Z, bind_sub P)]) ++ E).
@@ -108,7 +113,22 @@ Proof with simpl_env; auto.
     intros Q' EQ E S SsubQ;
     induction SsubQ; try discriminate; inversion EQ; subst;
     intros T' QsubT;
-    inversion QsubT; subst; eauto 4 using sub_trans_tvar.
+    inversion QsubT; subst.
+  (* is there a better way than repeating the tactic 14 times? *)
+  eauto 4 using sub_trans_tvar.
+  eauto 4 using sub_trans_tvar.
+  eauto 4 using sub_trans_tvar.
+  eauto 4 using sub_trans_tvar.
+  eauto 4 using sub_trans_tvar.
+  eauto 4 using sub_trans_tvar.
+  eauto 4 using sub_trans_tvar.
+  eauto 4 using sub_trans_tvar.
+  eauto 4 using sub_trans_tvar.
+  eauto 4 using sub_trans_tvar.
+  eauto 4 using sub_trans_tvar.
+  eauto 4 using sub_trans_tvar.
+  eauto 4 using sub_trans_tvar.
+  eauto 4 using sub_trans_tvar.
   Case "sub_all / sub_top".
     assert (sub E (typ_all S1 S2) (typ_all T1 T2)).
       SCase "proof of assertion".
@@ -149,7 +169,7 @@ Proof with
       simpl_env;
       eauto 4 using wf_typ_subst_tb, wf_env_subst_tb, wf_typ_weaken_head.
   intros Q E F Z S T P SsubT PsubQ.
-  remember (F ++ [(Z, bind_sub Q)] ++ E) as G.
+  remember (F ++ [(Z, bind_sub Q)] ++ E).
   generalize dependent F.
   induction SsubT; intros G EQ; subst; simpl subst_tt...
   Case "sub_top".
@@ -174,7 +194,10 @@ Proof with
         rewrite (subst_tt_fresh Z P Q).
           binds_get H.
             inversion H1; subst...
-          apply (notin_fv_wf E); eauto using fresh_mid_tail.
+          apply (notin_fv_wf E).
+          apply (proj2 (proj2 (sub_regular E P Q PsubQ))).
+          eapply fresh_mid_tail; apply ok_from_wf_env;
+            apply (proj1 (sub_regular (G ++ [(Z, bind_sub Q)] ++ E) U T SsubT)).
     SCase "X <> Z".
       apply (sub_trans_tvar (subst_tt Z P U))...
       rewrite (map_subst_tb_id E Z P);
@@ -206,7 +229,7 @@ Proof with simpl_env;
                        wf_typ_from_wf_env_sub,
                        sub_weakening.
   intros E F G e T Typ.
-  remember (G ++ E) as H.
+  remember (G ++ E).
   generalize dependent G.
   induction Typ; intros G EQ Ok; subst...
   Case "typing_abs".
@@ -230,7 +253,7 @@ Lemma sub_strengthening : forall x U E F S T,
   sub (F ++ E) S T.
 Proof with eauto using wf_typ_strengthening, wf_env_strengthening.
   intros x U E F S T SsubT.
-  remember (F ++ [(x, bind_typ U)] ++ E) as E'.
+  remember (F ++ [(x, bind_typ U)] ++ E).
   generalize dependent F.
   induction SsubT; intros F EQ; subst...
   Case "sub_trans_tvar".
@@ -252,7 +275,7 @@ Lemma typing_narrowing : forall Q E F X P e T,
   typing (F ++ [(X, bind_sub P)] ++ E) e T.
 Proof with eauto 6 using wf_env_narrowing, wf_typ_narrowing, sub_narrowing.
   intros Q E F X P e T PsubQ Typ.
-  remember (F ++ [(X, bind_sub Q)] ++ E) as E'.
+  remember (F ++ [(X, bind_sub Q)] ++ E).
   generalize dependent F.
   induction Typ; intros F EQ; subst...
   Case "typing_var".
@@ -297,7 +320,7 @@ Proof with simpl_env;
       before we use induction. *)
 
   intros U E F x T e u TypT TypU.
-  remember (F ++ [(x, bind_typ U)] ++ E) as E'.
+  remember (F ++ [(x, bind_typ U)] ++ E).
   generalize dependent F.
   induction TypT; intros F EQ; subst; simpl subst_ee...
 
@@ -400,7 +423,7 @@ Proof with simpl_env;
                          wf_typ_subst_tb,
                          sub_through_subst_tt.
   intros Q E F Z e T P Typ PsubQ.
-  remember (F ++ [(Z, bind_sub Q)] ++ E) as G.
+  remember (F ++ [(Z, bind_sub Q)] ++ E).
   generalize dependent F.
   induction Typ; intros F EQ; subst;
     simpl subst_te in *; simpl subst_tt in *...
@@ -440,7 +463,7 @@ Lemma typing_inv_abs : forall E S1 e1 T,
      typing ([(x, bind_typ S1)] ++ E) (open_ee e1 x) S2 /\ sub E S2 U2.
 Proof with auto.
   intros E S1 e1 T Typ.
-  remember (exp_abs S1 e1) as e.
+  remember (exp_abs S1 e1).
   generalize dependent e1.
   generalize dependent S1.
   induction Typ; intros S1 b1 EQ U1 U2 Sub; inversion EQ; subst.
@@ -461,7 +484,7 @@ Lemma typing_inv_tabs : forall E S1 e1 T,
      /\ sub ([(X, bind_sub U1)] ++ E) (open_tt S2 X) (open_tt U2 X).
 Proof with simpl_env; auto.
   intros E S1 e1 T Typ.
-  remember (exp_tabs S1 e1) as e.
+  remember (exp_tabs S1 e1).
   generalize dependent e1.
   generalize dependent S1.
   induction Typ; intros S1 e0 EQ U1 U2 Sub; inversion EQ; subst.
@@ -531,9 +554,9 @@ Lemma canonical_form_abs : forall e U1 U2,
   exists V, exists e1, e = exp_abs V e1.
 Proof.
   intros e U1 U2 Val Typ.
-  remember empty as E.
-  remember (typ_arrow U1 U2) as T.
-  revert U1 U2 HeqT HeqE.
+  remember empty.
+  remember (typ_arrow U1 U2).
+  revert U1 U2 Heqt Heql.
   induction Typ; intros U1 U2 EQT EQE; subst;
     try solve [ inversion Val | inversion EQT | eauto ].
   Case "typing_sub".
@@ -547,9 +570,9 @@ Lemma canonical_form_tabs : forall e U1 U2,
   exists V, exists e1, e = exp_tabs V e1.
 Proof.
   intros e U1 U2 Val Typ.
-  remember empty as E.
-  remember (typ_all U1 U2) as T.
-  revert U1 U2 HeqT HeqT.
+  remember empty.
+  remember (typ_all U1 U2).
+  revert U1 U2 Heqt Heql.
   induction Typ; intros U1 U2 EQT EQE; subst;
     try solve [ inversion Val | inversion EQT | eauto ].
   Case "typing_sub".
@@ -567,8 +590,8 @@ Lemma progress : forall e T,
   value e \/ exists e', red e e'.
 Proof with eauto.
   intros e T Typ.
-  remember empty as E. generalize dependent HeqE.
-  assert (Typ' : typing E e T)...
+  remember empty. generalize dependent Heql.
+  assert (Typ' : typing l e T)...
   induction Typ; intros EQ; subst...
   Case "typing_var".
     inversion H0.
@@ -588,6 +611,4 @@ Proof with eauto.
       destruct (canonical_form_tabs _ _ _ Val1 Typ) as [S [e3 EQ]].
       subst.
       exists (open_te e3 T)...
-    SCase "e1' Rede1'".
-      exists (exp_tapp e1' T)...
 Qed.

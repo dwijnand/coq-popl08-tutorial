@@ -437,13 +437,13 @@ Proof.
   induction e; intros j v i u Neq H; simpl in *.
   Case "bvar".
     destruct (j === n);  destruct (i === n).
-      Case "j = n = i".
+      SCase "j = n = i".
         subst n. destruct Neq. auto.
-      Case "j = n, i <> n".
+      SCase "j = n, i <> n".
         auto.
-      Case "j <> n, i = n".
+      SCase "j <> n, i = n".
         subst n. simpl in H. destruct (i === i). auto. destruct n. auto.
-      Case "j <> n, i <> n".
+      SCase "j <> n, i <> n".
         auto.
   Case "fvar".
     auto.

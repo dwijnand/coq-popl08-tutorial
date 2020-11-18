@@ -60,7 +60,7 @@ Module AtomImpl : ATOM.
   Proof.
     induction x. auto with arith.
     induction y; auto with arith.
-      simpl. induction z. omega. auto with arith.
+      simpl. induction z. intuition. auto with arith.
   Qed.
 
   Lemma nat_list_max : forall (xs : list nat),
@@ -79,7 +79,7 @@ Module AtomImpl : ATOM.
     forall (xs : list nat), { n : nat | ~ List.In n xs }.
   Proof.
     intros xs. destruct (nat_list_max xs) as [x H].
-    exists (S x). intros J. lapply (H (S x)). omega. trivial.
+    exists (S x). intros J. lapply (H (S x)). intuition. trivial.
   Qed.
 
   Module Atom_as_OT := Nat_as_OT.

@@ -23,7 +23,7 @@ Require Export ListFacts.
 Require Import Atom.
 
 Import AtomSet.F.
-Hint Local Unfold E.eq.
+Hint Unfold E.eq.
 
 
 (* ********************************************************************** *)
@@ -52,7 +52,7 @@ Hint Local Unfold E.eq.
     particular library, to allow users to use alternate notations if
     they desire. *)
 
-Notation Local "[ x ]" := (cons x nil).
+Notation "[ x ]" := (cons x nil).
 
 (** In the remainder of this library, we define a number of
     operations, lemmas, and tactics that simplify working with
@@ -247,22 +247,21 @@ End OpProperties.
     define "[in *]" and "[in H]" variants of [simpl_env]. *)
 
 Definition singleton_list (A : Type) (x : atom * A) := x :: nil.
-Implicit Arguments singleton_list [A].
 
 Lemma cons_concat : forall (A : Type) (E : list (atom * A)) x a,
-  (x, a) :: E = singleton_list (x, a) ++ E.
+  (x, a) :: E = singleton_list A (x, a) ++ E.
 Proof.
   reflexivity.
 Qed.
 
 Lemma map_singleton_list : forall (A B : Type) (f : A -> B) y b,
-  map f (singleton_list (y,b)) = [(y, f b)].
+  map f (singleton_list A (y,b)) = [(y, f b)].
 Proof.
   reflexivity.
 Qed.
 
 Lemma dom_singleton_list : forall (A : Type) (x : atom) (a : A),
-  dom (singleton_list (x,a)) = singleton x.
+  dom (singleton_list A (x,a)) = singleton x.
 Proof.
   simpl. intros. fsetdec.
 Qed.
@@ -329,7 +328,7 @@ Tactic Notation "rewrite_env" constr(E) "in" hyp(H) :=
 
 Hint Constructors ok.
 
-Hint Local Extern 1 (~ In _ _) => simpl_env in *; fsetdec.
+Hint Extern 1 (~ In _ _) => simpl_env in *; fsetdec.
 
 
 (* ********************************************************************** *)

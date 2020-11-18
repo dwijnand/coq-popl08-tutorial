@@ -701,10 +701,14 @@ the above form:
     Qed.
 
     (** [E.eq] is decidable. *)
+    Module OTE := MOT_to_OT E.
     Lemma dec_eq : forall (x y : E.t),
       decidable (E.eq x y).
     Proof.
       intros x y. red. destruct (E.compare x y); auto.
+      destruct (E.eq_dec x y).
+      auto.
+      auto.
     Qed.
 
     (** The hint database [FSet_decidability] will be given to

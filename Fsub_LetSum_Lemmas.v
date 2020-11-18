@@ -45,7 +45,7 @@ Lemma wf_typ_weakening : forall T E F G,
   wf_typ (G ++ F ++ E) T.
 Proof with simpl_env; eauto.
   intros T E F G Hwf_typ Hk.
-  remember (G ++ E) as F.
+  remember (G ++ E).
   generalize dependent G.
   induction Hwf_typ; intros G Hok Heq; subst...
   Case "type_all".
@@ -70,7 +70,7 @@ Lemma wf_typ_narrowing : forall V U T E F X,
   wf_typ (F ++ [(X, bind_sub U)] ++ E) T.
 Proof with simpl_env; eauto.
   intros V U T E F X Hwf_typ Hok.
-  remember (F ++ [(X, bind_sub V)] ++ E) as G.
+  remember (F ++ [(X, bind_sub V)] ++ E).
   generalize dependent F.
   induction Hwf_typ; intros F Hok Heq; subst...
   Case "wf_typ_var".
@@ -86,7 +86,7 @@ Lemma wf_typ_strengthening : forall E F x U T,
  wf_typ (F ++ E) T.
 Proof with simpl_env; eauto.
   intros E F x U T H.
-  remember (F ++ [(x, bind_typ U)] ++ E) as G.
+  remember (F ++ [(x, bind_typ U)] ++ E).
   generalize dependent F.
   induction H; intros F Heq; subst...
   Case "wf_typ_var".
@@ -104,7 +104,7 @@ Lemma wf_typ_subst_tb : forall F Q E Z P T,
   wf_typ (map (subst_tb Z P) F ++ E) (subst_tt Z P T).
 Proof with simpl_env; eauto using wf_typ_weaken_head, type_from_wf_typ.
   intros F Q E Z P T WT WP.
-  remember (F ++ [(Z, bind_sub Q)] ++ E) as G.
+  remember (F ++ [(Z, bind_sub Q)] ++ E).
   generalize dependent F.
   induction WT; intros F EQ Ok; subst; simpl subst_tt...
   Case "wf_typ_var".
