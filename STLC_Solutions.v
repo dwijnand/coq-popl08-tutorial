@@ -363,7 +363,7 @@ Inductive lc : exp -> Prop :=
       lc e2 ->
       lc (app e1 e2).
 
-Hint Constructors lc.
+Hint Constructors lc : core.
 
 (*************************************************************************)
 (** Properties about basic operations *)

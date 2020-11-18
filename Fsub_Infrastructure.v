@@ -662,4 +662,4 @@ Hint Resolve subst_tt_type subst_te_expr subst_ee_expr.
     thus enabling [Hint]s from the [Environment] library. *)
 
 Hint Extern 1 (binds _ (?F (subst_tt ?X ?U ?T)) _) =>
-  unsimpl (subst_tb X U (F T)).
+  unsimpl (subst_tb X U (F T)) : core.

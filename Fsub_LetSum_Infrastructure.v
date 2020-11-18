@@ -750,4 +750,4 @@ Hint Resolve open_ee_body_e.
     thus enabling [Hint]s from the [Environment] library. *)
 
 Hint Extern 1 (binds _ (?F (subst_tt ?X ?U ?T)) _) =>
-  unsimpl (subst_tb X U (F T)).
+  unsimpl (subst_tb X U (F T)) : core.

@@ -655,4 +655,4 @@ End AdditionalBindsProperties.
 
 Hint Resolve binds_map binds_concat_ok binds_weaken binds_weaken_at_head.
 
-Hint Immediate binds_remove_mid binds_remove_mid_cons.
+Hint Immediate binds_remove_mid binds_remove_mid_cons : core.

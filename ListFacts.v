@@ -91,7 +91,11 @@ Qed.
 Lemma InA_iff_In :
   forall (A : Set) x xs, InA (@eq A) x xs <-> In x xs.
 Proof.
-  split. 2:auto using In_InA.
+  split.
+  2 : {
+    apply In_InA.
+    intuition.
+  }
   induction xs as [ | y ys IH ].
     intros H. inversion H.
     intros H. inversion H; subst; auto with datatypes.
@@ -164,13 +168,13 @@ Section UniqueSortingProofs.
     pattern (@nil A) at 1 3 4 6, q. case q; [ | intros; discriminate ].
     intros. rewrite eq_rect_eq_list...
     (* case: cons_sort *)
-    replace (cons_leA leA x b l l0) with (eq_rect _ (fun xs => lelistA leA x xs)
-      (cons_leA leA x b l l0) _ (refl_equal (b :: l)))...
+    replace (cons_leA leA x b l r) with (eq_rect _ (fun xs => lelistA leA x xs)
+      (cons_leA leA x b l r) _ (refl_equal (b :: l)))...
     generalize (refl_equal (b :: l)).
     pattern (b :: l) at 1 3 4 6, q. case q; [ intros; discriminate | ].
     intros. inversion e; subst.
     rewrite eq_rect_eq_list...
-    rewrite (leA_unique l0 l2)...
+    rewrite (leA_unique r l1)...
   Qed.
 
   Theorem sort_unique :
@@ -184,13 +188,13 @@ Section UniqueSortingProofs.
     pattern (@nil A) at 1 3 4 6, q. case q; [ | intros; discriminate ].
     intros. rewrite eq_rect_eq_list...
     (* case: cons_sort *)
-    replace (cons_sort p l0) with (eq_rect _ (fun xs => sort leA xs)
-      (cons_sort p l0) _ (refl_equal (a :: l)))...
+    replace (cons_sort p h) with (eq_rect _ (fun xs => sort leA xs)
+      (cons_sort p h) _ (refl_equal (a :: l)))...
     generalize (refl_equal (a :: l)).
     pattern (a :: l) at 1 3 4 6, q. case q; [ intros; discriminate | ].
     intros. inversion e; subst.
     rewrite eq_rect_eq_list...
-    rewrite (lelistA_unique l0 l2).
+    rewrite (lelistA_unique h h0).
     rewrite (IHp s)...
   Qed.
 
@@ -203,18 +207,35 @@ End DecidableSorting.
 
 Section Equality_ext.
 
-Variable A : Set.
+Variable A : Type.
 Variable ltA : relation A.
-Hypothesis ltA_trans : forall x y z, ltA x y -> ltA y z -> ltA x z.
-Hypothesis ltA_not_eqA : forall x y, ltA x y -> x <> y.
-Hypothesis ltA_eqA : forall x y z, ltA x y -> y = z -> ltA x z.
-Hypothesis eqA_ltA : forall x y z, x = y -> ltA y z -> ltA x z.
 
-Hint Resolve ltA_trans.
-Hint Immediate ltA_eqA eqA_ltA.
+Hypothesis ltA_trans   : forall x y z, ltA x y -> ltA y z -> ltA x z.
+Hypothesis ltA_not_eqA : forall x y,   ltA x y            ->  x <> y.
+Hypothesis ltA_eqA :     forall x y z, ltA x y ->  y = z  -> ltA x z.
+Hypothesis eqA_ltA :     forall x y z,  x = y  -> ltA y z -> ltA x z.
 
-Notation Inf := (lelistA ltA).
-Notation Sort := (sort ltA).
+Hint Resolve   ltA_trans       : core.
+Hint Immediate ltA_eqA eqA_ltA : core.
+
+Notation Inf  := (lelistA ltA).
+Notation Sort := (sort    ltA).
+
+Lemma strictorder_irrel :
+  forall a, (complement ltA) a a.
+Proof.
+  intros.
+  unfold complement.
+  specialize ltA_not_eqA with (x := a) (y := a).
+  unfold not in ltA_not_eqA.
+  auto.
+Qed.
+
+Instance strictorder_ltA : StrictOrder ltA :=
+{
+   StrictOrder_Irreflexive := strictorder_irrel;
+   StrictOrder_Transitive := ltA_trans
+}.
 
 Lemma not_InA_if_Sort_Inf :
   forall xs a, Sort xs -> Inf a xs -> ~ InA (@eq A) a xs.
@@ -225,7 +246,13 @@ Proof.
     inversion Hinf; subst.
       assert (x <> x) by auto; intuition.
     inversion Hsort; inversion Hinf; subst.
-      assert (Inf a xs) by eauto using InfA_ltA.
+      assert (Inf a xs).
+      1 : {
+       apply InfA_ltA with (y := x).
+       2 : auto.
+       2 : auto.
+       intuition.
+      }
       assert (~ InA (@eq A) a xs) by auto.
       intuition.
 Qed.
@@ -243,8 +270,16 @@ Proof.
   assert (Q4 : InA (@eq A) y (x :: xs)) by firstorder.
   inversion Q3; subst; auto.
   inversion Q4; subst; auto.
-  assert (ltA y x) by (refine (SortA_InfA_InA _ _ _ _ _ H6 H7 H1); auto).
-  assert (ltA x y) by (refine (SortA_InfA_InA _ _ _ _ _ H2 H3 H4); auto).
+  assert (ltA y x).
+  1 : {
+    apply (SortA_InfA_InA _ _ _ H6 H7).
+    auto.
+  }
+  assert (ltA x y).
+  1 : {
+   apply (SortA_InfA_InA _ _ _ H2 H3).
+   auto.
+  }
   assert (y <> y) by eauto.
   intuition.
 Qed.

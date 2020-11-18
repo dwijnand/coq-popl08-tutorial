@@ -4,6 +4,7 @@
 
 Require Import FSets.
 Require Import ListFacts.
+Require Import Coq.Logic.ProofIrrelevance.
 
 
 (* *********************************************************************** *)
@@ -39,20 +40,26 @@ Module Make (X : UsualOrderedType) <: S with Module E := X.
   Module F := FSetList.Make E.
   Module OFacts := OrderedType.OrderedTypeFacts E.
 
-  Axiom sort_F_E_lt_proof_irrel : forall xs (p q : sort F.E.lt xs), p = q.
-
   Lemma eq_if_Equal :
     forall s s' : F.t, F.Equal s s' -> s = s'.
   Proof.
     intros [s1 pf1] [s2 pf2] Eq.
     assert (s1 = s2).
-      unfold F.Raw.t in *.
+      unfold F.MSet.Raw.t in *.
       eapply Sort_InA_eq_ext; eauto.
       intros; eapply E.lt_trans; eauto.
-      intros; eapply OFacts.lt_eq; eauto.
-      intros; eapply OFacts.eq_lt; eauto.
+      1 : {
+        apply F.MSet.Raw.isok_iff.
+        auto.
+      }
+      1 : {
+        apply F.MSet.Raw.isok_iff.
+        auto.
+      }
     subst s1.
-    rewrite (sort_F_E_lt_proof_irrel _ pf1 pf2).
+    assert (pf1 = pf2).
+    apply proof_irrelevance.
+    subst pf2.
     reflexivity.
   Qed.
 

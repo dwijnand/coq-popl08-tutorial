@@ -151,7 +151,7 @@ Qed.
     [ok_from_wf_env] serves as a bridge that allows us to use the
     environments library. *)
 
-Hint Resolve ok_from_wf_env.
+Hint Resolve ok_from_wf_env : core.
 
 Lemma wf_typ_from_binds_typ : forall x U E,
   wf_env E ->
