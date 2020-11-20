@@ -9,13 +9,13 @@
 
     This tutorial concentrates on "how" to formalize STLC; for more
     details about "why" we use this style of development see:
-    "Engineering Formal Metatheory", Aydemir, Charguéraud, Pierce,
+    "Engineering Formal Metatheory", Aydemir, Chargu\u00e9raud, Pierce,
     Pollack, Weirich. POPL 2008.
 
     Tutorial authors: Brian Aydemir and Stephanie Weirich, with help
     from Aaron Bohannon, Nate Foster, Benjamin Pierce, Jeffrey
     Vaughan, Dimitrios Vytiniotis, and Steve Zdancewic.  Adapted from
-    code by Arthur Charguéraud.
+    code by Arthur Chargu\u00e9raud.
 *)
 
 (*************************************************************************)
@@ -68,11 +68,11 @@ Inductive typ : Set :=
 
 Inductive exp : Set :=
   | bvar : nat  -> exp    (* bound variables *)
-  | fvar : atom -> exp   (* free  variables *)
+  | fvar : atom -> exp    (* free  variables *)
   | abs  : exp  -> exp
   | app  : exp  -> exp -> exp.
 
-Coercion bvar : nat >-> exp.
+Coercion bvar : nat  >-> exp.
 Coercion fvar : atom >-> exp.
 
 (** We declare the constructors for indices and variables to be
@@ -104,7 +104,7 @@ representation.
 *)
 
 (** "two"    \s. \z. s(s z) **)
-
+Definition two := abs (abs (app 1 (app 1 0))).
 
 (** There are two important advantages of the locally nameless
     representation:
@@ -141,9 +141,9 @@ representation.
 
 Fixpoint subst (z : atom) (u : exp) (e : exp) {struct e} : exp :=
   match e with
-    | bvar i => bvar i
-    | fvar x => if x == z then u else (fvar x)
-    | abs e1 => abs (subst z u e1)
+    | bvar i    => bvar i
+    | fvar x    => if x == z then u else (fvar x)
+    | abs e1    => abs (subst z u e1)
     | app e1 e2 => app (subst z u e1) (subst z u e2)
   end.
 (** The Fixpoint keyword defines a Coq function. As all functions in 
@@ -208,9 +208,9 @@ Qed.
 
 Fixpoint fv (e : exp) {struct e} : atoms :=
   match e with
-    | bvar i => {}
-    | fvar x => singleton x
-    | abs e1 => fv e1
+    | bvar i    => {}
+    | fvar x    => singleton x
+    | abs e1    => fv e1
     | app e1 e2 => (fv e1) `union` (fv e2)
   end.
 
@@ -248,8 +248,16 @@ Proof.
         [f e1 = f e1'] in to one of the form [e1 = e1'], and
         similarly for [f e1 e2 = f e1' e2'], etc.
   *)
-Admitted.
-
+  intros x e u H. induction e.
+    simpl. reflexivity.
+    simpl. destruct (a == x).
+      subst. simpl fv in H. fsetdec.
+      reflexivity.
+    simpl. f_equal. intuition.
+    simpl in *. f_equal.
+      intuition.
+      intuition.
+Qed. 
 
 (*************************************************************************)
 (** * Opening *)
@@ -282,9 +290,9 @@ Admitted.
 
 Fixpoint open_rec (k : nat) (u : exp) (e : exp) {struct e} : exp :=
   match e with
-    | bvar i => if k === i then u else (bvar i)
-    | fvar x => fvar x
-    | abs e1 => abs (open_rec (S k) u e1)
+    | bvar i    => if k === i then u else (bvar i)
+    | fvar x    => fvar x
+    | abs e1    => abs (open_rec (S k) u e1)
     | app e1 e2 => app (open_rec k u e1) (open_rec k u e2)
   end.
 
@@ -319,13 +327,14 @@ Lemma demo_open :
        (app (abs (app Y 0)) Y).
 
 Proof.
-   (* To show the equality of the two sides below, use the tactics
+  (* To show the equality of the two sides below, use the tactics
       [unfold], which replaces a definition with its RHS and reduces
       it to head form, and [simpl], which reduces the term the rest
       of the way.
       Then finish up with [auto].
   *)
-Admitted.
+  unfold open. simpl. auto.
+Qed.
 
 (*************************************************************************)
 (*                                                                       *)
@@ -352,15 +361,10 @@ Admitted.
 *)
 
 Inductive lc : exp -> Prop :=
-  | lc_var : forall x,
-      lc (fvar x)
-  | lc_abs : forall (x:atom) e,
-      lc (open e x) ->
-      lc (abs e)
-  | lc_app : forall e1 e2,
-      lc e1 ->
-      lc e2 ->
-      lc (app e1 e2).
+  | lc_var : forall x,           lc (fvar x)
+  | lc_abs : forall (x: atom) e, lc (open e x)  -> lc (abs e)
+  | lc_app : forall e1 e2,       lc e1 -> lc e2 -> lc (app e1 e2)
+  .
 
 Hint Constructors lc : core.
 
